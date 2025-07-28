@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Los Especialistas</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <h1> Procesamiento de CVs - Los Especialistas</h1>
+
+    <form action="/subir_cv" method="post" enctype="multipart/form-data">
+        <label for="archivo">Sube tu CV (PDF):</label><br><br>
+        <input type="file" name="archivo" accept=".pdf" required>
+        <button type="submit">Subir y Procesar</button>
+    </form>
+
+    <hr>
+
+    <h2> Candidatos Procesados</h2>
+    <button onclick="cargarCandidatos()">Actualizar Lista</button>
+    <ul id="lista-candidatos"></ul>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

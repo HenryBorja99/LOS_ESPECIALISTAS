@@ -1,2 +1,1 @@
-# LOS_ESPECIALISTAS
-Los Especialistas es una plataforma web inteligente diseñada para optimizar el proceso de selección por parte de empresas y reclutadores.
+#Los Especialistas es una plataforma web inteligente diseñada para optimizar el proceso de selección de talento por parte de empresas y reclutadores. Su objetivo es acelerar la identificación de profesionales ideales para proyectos específicos mediante la integración de inteligencia artificial, análisis de currículums y categorización automática por perfil profesional.
