@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify #pip install Flask
 from flask_cors import CORS # Necesitas instalar 'flask-cors': pip install Flask-Cors
 from pymongo import MongoClient # Usaremos MongoDB, instala pymongo: pip install pymongo
 import bcrypt # pip install bcrypt
@@ -45,6 +45,34 @@ def register():
     }).inserted_id
 
     return jsonify({'message': 'Usuario registrado con éxito', 'userId': str(user_id)}), 201
+
+@app.route('/api/profile/update', methods=['PUT'])
+def update_profile():
+    data = request.get_json()
+    email = data.get('email')  # identificador único del usuario
+
+    if not email:
+        return jsonify({'message': 'El correo electrónico es obligatorio'}), 400
+
+    user = users_collection.find_one({'email': email})
+    if not user:
+        return jsonify({'message': 'Usuario no encontrado'}), 404
+
+    updated_fields = {}
+    if 'name' in data:
+        updated_fields['name'] = data['name']
+    if 'specialty' in data:
+        updated_fields['specialty'] = data['specialty']
+    if 'skills' in data:
+        updated_fields['skills'] = [s.strip() for s in data['skills'].split(',')] if isinstance(data['skills'], str) else data['skills']
+    if 'location' in data:
+        updated_fields['location'] = data['location']
+    if 'summary' in data:
+        updated_fields['summary'] = data['summary']
+
+    users_collection.update_one({'email': email}, {'$set': updated_fields})
+
+    return jsonify({'message': 'Perfil actualizado correctamente'}), 200
 
 # Ruta de Login
 @app.route('/api/login', methods=['POST'])
