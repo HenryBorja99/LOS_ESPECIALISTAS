@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS # Necesitas instalar 'flask-cors': pip install Flask-Cors
-from pymongo import MongoClient # O lo que uses para MongoDB
+from pymongo import MongoClient # Usaremos MongoDB, instala pymongo: pip install pymongo
 import bcrypt # pip install bcrypt
 import jwt # pip install PyJWT
 import os

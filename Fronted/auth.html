@@ -72,59 +72,85 @@
     </main>
 
     <script>
-        // Lógica para alternar entre formularios de login y registro
-        const loginForm = document.getElementById('login-form');
-        const registerForm = document.getElementById('register-form');
-        const formTitle = document.getElementById('form-title');
-        const showRegisterLink = document.getElementById('show-register');
-        const showLoginLink = document.getElementById('show-login');
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const formTitle = document.getElementById('form-title');
+    const showRegisterLink = document.getElementById('show-register');
+    const showLoginLink = document.getElementById('show-login');
 
-        showRegisterLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            loginForm.classList.add('hidden');
-            registerForm.classList.remove('hidden');
-            formTitle.textContent = 'Registrarse';
-        });
+    showRegisterLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        loginForm.classList.add('hidden');
+        registerForm.classList.remove('hidden');
+        formTitle.textContent = 'Registrarse';
+    });
 
-        showLoginLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            registerForm.classList.add('hidden');
-            loginForm.classList.remove('hidden');
-            formTitle.textContent = 'Iniciar Sesión';
-        });
+    showLoginLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        registerForm.classList.add('hidden');
+        loginForm.classList.remove('hidden');
+        formTitle.textContent = 'Iniciar Sesión';
+    });
 
-        // Si la URL tiene #register, mostrar el formulario de registro al cargar la página
-        if (window.location.hash === '#register') {
-            loginForm.classList.add('hidden');
-            registerForm.classList.remove('hidden');
-            formTitle.textContent = 'Registrarse';
+    if (window.location.hash === '#register') {
+        loginForm.classList.add('hidden');
+        registerForm.classList.remove('hidden');
+        formTitle.textContent = 'Registrarse';
+    }
+
+    // LOGIN
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = loginForm.elements['login-email'].value;
+        const password = loginForm.elements['login-password'].value;
+
+        try {
+            const res = await fetch('http://localhost:5000/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                localStorage.setItem('token', data.token);
+                alert('Login exitoso');
+                window.location.href = 'profile.html';
+            } else {
+                alert(data.message || 'Credenciales inválidas');
+            }
+        } catch (err) {
+            alert('Error al conectar con el servidor');
         }
+    });
 
-        // Aquí se manejará el envío de los formularios
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = loginForm.elements['login-email'].value;
-            const password = loginForm.elements['login-password'].value;
-            console.log('Login attempt:', { email, password });
-            // Aquí deberías enviar estos datos a tu backend Python
-            // const response = await fetch('URL_DE_TU_BACKEND/api/login', { /* ... */ });
-            // const data = await response.json();
-            // Manejar respuesta (ej., guardar token, redirigir a perfil)
-            alert('Login (funcionalidad de backend no implementada)');
-        });
+    // REGISTRO
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = registerForm.elements['register-name'].value;
+        const email = registerForm.elements['register-email'].value;
+        const password = registerForm.elements['register-password'].value;
 
-        registerForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = registerForm.elements['register-name'].value;
-            const email = registerForm.elements['register-email'].value;
-            const password = registerForm.elements['register-password'].value;
-            console.log('Register attempt:', { name, email, password });
-            // Aquí deberías enviar estos datos a tu backend Python
-            // const response = await fetch('URL_DE_TU_BACKEND/api/register', { /* ... */ });
-            // const data = await response.json();
-            // Manejar respuesta (ej., guardar token, redirigir a perfil o login)
-            alert('Registro (funcionalidad de backend no implementada)');
-        });
+        try {
+            const res = await fetch('http://localhost:5000/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                alert('Registro exitoso. Inicia sesión.');
+                window.location.href = 'auth.html';
+            } else {
+                alert(data.message || 'Error en registro');
+            }
+        } catch (err) {
+            alert('Error al conectar con el servidor');
+        }
+    });
     </script>
+
 </body>
 </html>
