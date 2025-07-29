@@ -1,0 +1,123 @@
+from flask import Flask, request, jsonify
+from flask_cors import CORS # Necesitas instalar 'flask-cors': pip install Flask-Cors
+from pymongo import MongoClient # O lo que uses para MongoDB
+import bcrypt # pip install bcrypt
+import jwt # pip install PyJWT
+import os
+from dotenv import load_dotenv # pip install python-dotenv
+
+load_dotenv() # Carga las variables de entorno del archivo .env
+
+app = Flask(__name__)
+CORS(app) # Habilita CORS para todas las rutas
+
+MONGO_URI = os.getenv('MONGO_URI')
+JWT_SECRET = os.getenv('JWT_SECRET')
+
+client = MongoClient(MONGO_URI)
+db = client.los_especialistas # Nombre de tu base de datos
+users_collection = db.users # Colección de usuarios
+
+# Ruta de Registro
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    name = data.get('name')
+    email = data.get('email')
+    password = data.get('password')
+
+    if not all([name, email, password]):
+        return jsonify({'message': 'Faltan campos obligatorios'}), 400
+
+    if users_collection.find_one({'email': email}):
+        return jsonify({'message': 'El correo electrónico ya está registrado'}), 409
+
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    
+    user_id = users_collection.insert_one({
+        'name': name,
+        'email': email,
+        'password': hashed_password.decode('utf-8'),
+        'specialty': '', # Campos iniciales vacíos
+        'skills': [],
+        'location': '',
+        'summary': ''
+    }).inserted_id
+
+    return jsonify({'message': 'Usuario registrado con éxito', 'userId': str(user_id)}), 201
+
+# Ruta de Login
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+
+    user = users_collection.find_one({'email': email})
+
+    if not user or not bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
+        return jsonify({'message': 'Credenciales inválidas'}), 401
+
+    token = jwt.encode({'user_id': str(user['_id'])}, JWT_SECRET, algorithm='HS256')
+    return jsonify({'token': token}), 200
+
+# Middleware para proteger rutas (ejemplo)
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        if 'Authorization' in request.headers:
+            token = request.headers['Authorization'].split(' ')[1]
+
+        if not token:
+            return jsonify({'message': 'Token es requerido'}), 401
+
+        try:
+            data = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
+            current_user = users_collection.find_one({'_id': ObjectId(data['user_id'])})
+            if not current_user:
+                return jsonify({'message': 'Usuario no encontrado'}), 401
+        except jwt.ExpiredSignatureError:
+            return jsonify({'message': 'Token ha expirado'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'message': 'Token inválido'}), 401
+
+        return f(current_user, *args, **kwargs)
+    return decorated
+
+from functools import wraps
+from bson.objectid import ObjectId # pip install pymongo
+
+# Ruta de Perfil (protegida)
+@app.route('/api/profile', methods=['GET', 'PUT'])
+@token_required
+def profile(current_user):
+    if request.method == 'GET':
+        user_data = {
+            'name': current_user.get('name'),
+            'email': current_user.get('email'),
+            'specialty': current_user.get('specialty'),
+            'skills': current_user.get('skills'),
+            'location': current_user.get('location'),
+            'summary': current_user.get('summary')
+            # No devolver el password
+        }
+        return jsonify(user_data), 200
+    
+    elif request.method == 'PUT':
+        data = request.get_json()
+        
+        # Filtrar solo los campos permitidos para actualización
+        update_fields = {}
+        if 'name' in data: update_fields['name'] = data['name']
+        if 'email' in data: update_fields['email'] = data['email']
+        if 'specialty' in data: update_fields['specialty'] = data['specialty']
+        if 'skills' in data: update_fields['skills'] = data['skills']
+        if 'location' in data: update_fields['location'] = data['location']
+        if 'summary' in data: update_fields['summary'] = data['summary']
+
+        users_collection.update_one({'_id': current_user['_id']}, {'$set': update_fields})
+        return jsonify({'message': 'Perfil actualizado con éxito'}), 200
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000) # Corre en http://localhost:5000
