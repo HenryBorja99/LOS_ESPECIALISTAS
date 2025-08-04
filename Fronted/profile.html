@@ -123,6 +123,14 @@
     .profile-form button:hover {
       background: #00695C;
     }
+    /* Estilo para el mensaje de bienvenida */
+    #welcome-message {
+      text-align: center;
+      font-size: 1.5em;
+      font-weight: bold;
+      color: #004D40;
+      margin-bottom: 1.5em;
+    }
     @media (max-width:600px) {
       .profile-edit-container {
         padding: 1em;
@@ -154,10 +162,11 @@
   </header>
 
   <div class="profile-edit-container">
+    <div id="welcome-message"></div>
     <div class="profile-edit-title">Editar Perfil</div>
     <form class="profile-form" id="profileForm">
       <div class="avatar-edit">
-        <span class="avatar-preview" id="avatar-preview">
+        <span class="avatar-preview" id="avatar-preview" aria-label="Avatar">
           AD
         </span>
         <input type="file" accept="image/*" id="avatar-input" style="margin-bottom:0px;" title="Cambiar foto de perfil">
@@ -166,71 +175,113 @@
       <input type="text" id="nombre" name="nombre" placeholder="Nombres Apellidos" required />
 
       <label for="email">Correo electrónico</label>
-      <input type="email" id="email" name="email" placeholder="coreeo@ejemplo.com" required />
+      <input type="email" id="email" name="email" placeholder="correo@ejemplo.com" required />
 
       <label for="puesto">Puesto / Especialidad</label>
       <input type="text" id="puesto" name="puesto" placeholder="Puesto: Backend" />
 
       <label for="habilidades">Habilidades principales</label>
-      <input type="text" id="habilidades" name="habilidades" placeholder="Describa sus habilidades: Pyrthon, Django, SQL" />
+      <input type="text" id="habilidades" name="habilidades" placeholder="Describa sus habilidades: Python, Django, SQL" />
 
       <label for="ubicacion">Ubicación</label>
-      <input type="text" id="ubicacion" name="ubicacion" placeholder="Remoto, Hibrido, Presencial" />
+      <input type="text" id="ubicacion" name="ubicacion" placeholder="Remoto, Híbrido, Presencial" />
 
       <label for="resumen">Resumen profesional</label>
-      <textarea id="resumen" name="resumen" rows="3" placeholder='Desarrollador backend con 4 años de experiencia en proyectos SaaS.'></textarea>
+      <textarea id="resumen" name="resumen" rows="3" placeholder="Desarrollador backend con 4 años de experiencia en proyectos SaaS."></textarea>
 
       <button type="submit">Guardar cambios</button>
     </form>
   </div>
   <script>
-    // Previsualizar imagen subida
-    document.getElementById('avatar-input').addEventListener('change', function(e){
-      const preview = document.getElementById('avatar-preview');
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(ev) {
-        preview.innerHTML = "<img src='" + ev.target.result + "' alt='Avatar' style='width:100%;height:100%;object-fit:cover; border-radius:50%;'/>";
-      };
-      reader.readAsDataURL(file);
-    });
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('token');
+      const userRole = localStorage.getItem('userRole');
+      const welcomeMessageElement = document.getElementById('welcome-message');
 
-    document.querySelector('.profile-form').addEventListener('submit', async function (e) {
-      e.preventDefault();
+      // Redirigir si no hay token (no autenticado)
+      if (!token) {
+        alert('No estás autenticado. Por favor, inicia sesión.');
+        window.location.href = 'auth.html';
+        return;
+      }
 
-      const name = document.getElementById('nombre').value;
-      const email = document.getElementById('email').value;
-      const specialty = document.getElementById('puesto').value;
-      const skills = document.getElementById('habilidades').value;
-      const location = document.getElementById('ubicacion').value;
-      const summary = document.getElementById('resumen').value;
+      // Mostrar mensaje de bienvenida según el rol
+      if (userRole) {
+        let message = '';
+        switch (userRole) {
+          case 'especialista':
+            message = '¡Bienvenido, Especialista!';
+            break;
+          case 'reclutador':
+            message = '¡Bienvenido, Reclutador!';
+            break;
+          default:
+            message = '¡Bienvenido!';
+        }
+        welcomeMessageElement.textContent = message;
+      } else {
+        welcomeMessageElement.textContent = '¡Bienvenido!';
+      }
 
-      const response = await fetch('http://localhost:5000/api/profile/update', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: name,
-          email: email,
-          specialty: specialty,
-          skills: skills,
-          location: location,
-          summary: summary
-        })
+      // Lógica para cerrar sesión
+      document.getElementById('logoutButton').addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.removeItem('token');
+        localStorage.removeItem('userRole');
+        alert('Sesión cerrada exitosamente.');
+        window.location.href = 'auth.html';
       });
 
-      const result = await response.json();
+      // Previsualizar imagen subida
+      document.getElementById('avatar-input').addEventListener('change', function(e){
+        const preview = document.getElementById('avatar-preview');
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+          preview.innerHTML = "<img src='" + ev.target.result + "' alt='Avatar' style='width:100%;height:100%;object-fit:cover; border-radius:50%;'/>";
+        };
+        reader.readAsDataURL(file);
+      });
 
-      if (response.ok) {
-        alert('Perfil actualizado exitosamente.');
-      } else {
-        alert('Error al actualizar el perfil: ' + result.message);
-      }
+      document.querySelector('.profile-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const name = document.getElementById('nombre').value;
+        const email = document.getElementById('email').value;
+        const specialty = document.getElementById('puesto').value;
+        const skills = document.getElementById('habilidades').value;
+        const location = document.getElementById('ubicacion').value;
+        const summary = document.getElementById('resumen').value;
+
+        try {
+          const response = await fetch('http://localhost:5000/api/profile/update', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              name: name,
+              email: email,
+              specialty: specialty,
+              skills: skills,
+              location: location,
+              summary: summary
+            })
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            alert('Perfil actualizado exitosamente.');
+          } else {
+            alert('Error al actualizar el perfil: ' + result.message);
+          }
+        } catch (error) {
+          alert('Error de red o del servidor: ' + error.message);
+        }
+      });
     });
   </script>
-
-
 </body>
-</html>
