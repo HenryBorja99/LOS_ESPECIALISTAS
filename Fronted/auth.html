@@ -65,6 +65,19 @@
                     <label for="register-password" class="block text-gray-700 text-sm font-bold mb-2">Contraseña</label>
                     <input type="password" id="register-password" name="password" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline border-[#004D40]" required>
                 </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Tipo de cuenta</label>
+                    <div class="flex items-center space-x-4">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="user-role" value="especialista" class="form-radio text-[#004D40]" checked>
+                            <span class="ml-2 text-gray-700">Especialista</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="user-role" value="reclutador" class="form-radio text-[#004D40]">
+                            <span class="ml-2 text-gray-700">Reclutador</span>
+                        </label>
+                    </div>
+                </div>
                 <button type="submit" class="bg-[#004D40] hover:bg-opacity-90 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full transition duration-300">Registrarse</button>
                 <p class="text-center text-gray-600 text-sm mt-4">¿Ya tienes cuenta? <a href="#" id="show-login" class="text-[#004D40] hover:underline font-bold">Inicia Sesión</a></p>
             </form>
@@ -78,6 +91,7 @@
     const showRegisterLink = document.getElementById('show-register');
     const showLoginLink = document.getElementById('show-login');
 
+    // Maneja la visibilidad de los formularios de login y registro
     showRegisterLink.addEventListener('click', (e) => {
         e.preventDefault();
         loginForm.classList.add('hidden');
@@ -92,13 +106,14 @@
         formTitle.textContent = 'Iniciar Sesión';
     });
 
+    // Muestra el formulario de registro si la URL tiene #register
     if (window.location.hash === '#register') {
         loginForm.classList.add('hidden');
         registerForm.classList.remove('hidden');
         formTitle.textContent = 'Registrarse';
     }
 
-    // LOGIN
+    // Lógica para el LOGIN
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = loginForm.elements['login-email'].value;
@@ -115,39 +130,59 @@
             if (res.ok) {
                 localStorage.setItem('token', data.token);
                 alert('Login exitoso');
-                window.location.href = 'profile.html';
+                window.location.href = 'profile.html'; // Redirige a profile.html tras login exitoso
             } else {
                 alert(data.message || 'Credenciales inválidas');
             }
         } catch (err) {
-            alert('Error al conectar con el servidor');
+            console.error('Error de conexión:', err); // Log del error para depuración
+            alert('Error al conectar con el servidor. Asegúrate de que el backend esté corriendo.');
         }
     });
 
-    // REGISTRO
+    // Lógica para el REGISTRO
     registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = registerForm.elements['register-name'].value;
         const email = registerForm.elements['register-email'].value;
         const password = registerForm.elements['register-password'].value;
+        
+        // Obtener el rol seleccionado
+        const roleRadioButtons = document.querySelectorAll('input[name="user-role"]');
+        let role = '';
+        for (const radioButton of roleRadioButtons) {
+            if (radioButton.checked) {
+                role = radioButton.value;
+                break;
+            }
+        }
+        
+        // Validar que se haya seleccionado un rol (opcional, pero recomendado)
+        if (!role) {
+            alert('Por favor, selecciona un tipo de cuenta (Especialista o Reclutador).');
+            return; // Detiene el envío del formulario
+        }
 
         try {
             const res = await fetch('http://localhost:5000/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password })
+                // Incluir el rol en el body
+                body: JSON.stringify({ name, email, password, role }) 
             });
 
             const data = await res.json();
 
             if (res.ok) {
                 alert('Registro exitoso. Inicia sesión.');
-                window.location.href = 'auth.html';
+                // Opcional: Redirigir automáticamente al login o a una página de éxito
+                window.location.href = 'auth.html'; 
             } else {
                 alert(data.message || 'Error en registro');
             }
         } catch (err) {
-            alert('Error al conectar con el servidor');
+            console.error('Error de conexión:', err); // Log del error para depuración
+            alert('Error al conectar con el servidor. Asegúrate de que el backend esté corriendo.');
         }
     });
     </script>
