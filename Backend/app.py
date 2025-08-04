@@ -5,7 +5,9 @@ import bcrypt # pip install bcrypt
 import jwt # pip install PyJWT
 import os
 from dotenv import load_dotenv # pip install python-dotenv
-
+from functools import wraps
+from bson.objectid import ObjectId # pip install pymongo
+from dotenv import load_dotenv
 load_dotenv() # Carga las variables de entorno del archivo .env
 
 app = Flask(__name__)
@@ -14,6 +16,7 @@ CORS(app) # Habilita CORS para todas las rutas
 MONGO_URI = os.getenv('MONGO_URI')
 JWT_SECRET = os.getenv('JWT_SECRET')
 
+# Conexión a MongoDB
 client = MongoClient(MONGO_URI)
 db = client.los_especialistas # Nombre de tu base de datos
 users_collection = db.users # Colección de usuarios
@@ -25,9 +28,12 @@ def register():
     name = data.get('name')
     email = data.get('email')
     password = data.get('password')
+    role = data.get('role', 'especialista')  # Por defecto, el rol es 'especialista'
 
     if not all([name, email, password]):
         return jsonify({'message': 'Faltan campos obligatorios'}), 400
+    if users_collection.find_one({'name': name}):
+        return jsonify({'message': 'El nombre de usuario ya está registrado'}), 409
 
     if users_collection.find_one({'email': email}):
         return jsonify({'message': 'El correo electrónico ya está registrado'}), 409
@@ -38,6 +44,7 @@ def register():
         'name': name,
         'email': email,
         'password': hashed_password.decode('utf-8'),
+        'role': role,
         'specialty': '', # Campos iniciales vacíos
         'skills': [],
         'location': '',
@@ -46,6 +53,7 @@ def register():
 
     return jsonify({'message': 'Usuario registrado con éxito', 'userId': str(user_id)}), 201
 
+# Ruta de Actualización de Perfil
 @app.route('/api/profile/update', methods=['PUT'])
 def update_profile():
     data = request.get_json()
@@ -57,6 +65,7 @@ def update_profile():
     user = users_collection.find_one({'email': email})
     if not user:
         return jsonify({'message': 'Usuario no encontrado'}), 404
+    
 
     updated_fields = {}
     if 'name' in data:
@@ -124,6 +133,7 @@ def profile(current_user):
         user_data = {
             'name': current_user.get('name'),
             'email': current_user.get('email'),
+            'role': current_user.get('role'),
             'specialty': current_user.get('specialty'),
             'skills': current_user.get('skills'),
             'location': current_user.get('location'),
