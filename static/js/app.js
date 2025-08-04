@@ -3,7 +3,8 @@ async function cargarCandidatos() {
     lista.innerHTML = "Cargando.";
 
     try {
-        const res = await fetch("/candidatos");
+        const res = await fetch("http://127.0.0.1:5000/api/candidatos");
+
         const data = await res.json();
 
         lista.innerHTML = "";
@@ -18,6 +19,7 @@ async function cargarCandidatos() {
         }
 
     } catch (error) {
+        console.error(error);
         lista.innerHTML = "<li>Error al cargar los candidatos.</li>";
     }
 }

@@ -147,5 +147,19 @@ def profile(current_user):
         users_collection.update_one({'_id': current_user['_id']}, {'$set': update_fields})
         return jsonify({'message': 'Perfil actualizado con éxito'}), 200
 
+# Ruta para obtener todos los candidatos
+@app.route('/api/candidatos', methods=['GET'])
+def get_candidatos():
+    candidatos = list(users_collection.find({}, {
+        '_id': 0,
+        'name': 1,
+        'email': 1,
+        'specialty': 1,
+        'skills': 1,
+        'location': 1,
+        'summary': 1
+    }))
+    return jsonify(candidatos), 200
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000) # Corre en http://localhost:5000
